@@ -7,4 +7,4 @@ load_dotenv()
 
 db = SQLAlchemy()
 
-def create_db
+def create_db()

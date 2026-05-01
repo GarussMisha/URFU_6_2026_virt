@@ -1,5 +1,7 @@
 venv/
 .env
+plans/
+docs/
 
 # Состояние Terraform (никогда не коммитим)
 *.tfstate
