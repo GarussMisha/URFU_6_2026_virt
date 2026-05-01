@@ -1,0 +1,16 @@
+services:
+  postgresql:
+    image: postgres:15-alpine
+    environment:
+      POSTGRES_USER: pguser
+      POSTGRES_PASSWORD: pgbpassword
+      POSTGRES_DB: project_db
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U pguser -d project_db"]
+      interval: 15s
+      timeout: 5s
+      retries: 3

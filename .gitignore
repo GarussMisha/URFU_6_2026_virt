@@ -1,0 +1,11 @@
+venv/
+.env
+
+# Состояние Terraform (никогда не коммитим)
+*.tfstate
+*.tfstate.backup
+.terraform/
+
+# Секреты и переменные
+yc_key.json
+*.tfvars
