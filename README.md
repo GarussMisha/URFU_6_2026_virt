@@ -7,3 +7,5 @@
 
 
 ## Структура файлов
+docker-compose.db.yaml - Развертывание БД Postgre на ВМ vm-pg001
+.env - Переменные окружения для проекта (`PG_DATABASE_URL`, `FLASK_ENV`, `SECRET_KEY`)

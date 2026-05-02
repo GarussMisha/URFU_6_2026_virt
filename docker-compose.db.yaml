@@ -1,0 +1,15 @@
+services:
+  postgresql:
+    image: postgres:15-alpine
+    container_name: postgre_db
+    environment:
+      POSTGRES_DB: PGDB
+      POSTGRES_USER: PGUSER
+      POSTGRES_PASSWORD: PGPASSWORD
+    ports:
+      - "5432:5432"
+    volumes:
+      - /mnt/docker_storage/postgres_data:/var/lib/postgresql/data
+
+
+    
