@@ -1,8 +1,14 @@
-from flask import Blueprint, request, jsonify
+from flask import Blueprint, request, jsonify, render_template
 from .models import Item
 from app import db
 
 bp = Blueprint('routes', __name__)
+
+
+@bp.route('/')
+def index():
+    """Render the main HTML page with the list of items"""
+    return render_template('index.html')
 
 
 @bp.route('/items', methods=['GET'])

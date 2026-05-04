@@ -1,0 +1,266 @@
+{% extends "base.html" %}
+
+{% block title %}Список товаров{% endblock %}
+
+{% block content %}
+<h2>Список товаров</h2>
+
+<!-- Форма добавления/редактирования товара -->
+<div class="form-container">
+    <h3 id="form-title">Добавить товар</h3>
+    <form id="item-form" onsubmit="event.preventDefault();">
+        <input type="hidden" id="item-id" value="">
+        
+        <div class="form-group">
+            <label for="sku">Артикул (SKU):</label>
+            <input type="text" id="sku" name="sku" required>
+        </div>
+        
+        <div class="form-group">
+            <label for="name">Название:</label>
+            <input type="text" id="name" name="name" required>
+        </div>
+        
+        <div class="form-group">
+            <label for="description">Описание:</label>
+            <textarea id="description" name="description" rows="3"></textarea>
+        </div>
+        
+        <div class="form-group">
+            <label for="quantity">Количество на складе:</label>
+            <input type="number" id="quantity" name="quantity_in_stock" min="0" required>
+        </div>
+        
+        <div class="form-group">
+            <label for="price">Цена:</label>
+            <input type="number" id="price" name="price" step="0.01" min="0" required>
+        </div>
+        
+        <div class="form-actions">
+            <button type="button" id="submit-btn" class="btn btn-primary">Добавить</button>
+            <button type="button" id="cancel-btn" class="btn btn-secondary" style="display: none;">Отмена</button>
+        </div>
+    </form>
+</div>
+
+<!-- Поиск товара по ID -->
+<div class="search-container">
+    <h3>Поиск товара</h3>
+    <div class="search-form">
+        <input type="number" id="search-id" placeholder="Введите ID товара" min="1">
+        <button onclick="findItemById()" class="btn btn-search">Найти по ID</button>
+        <button onclick="loadItems()" class="btn btn-secondary">Показать все</button>
+    </div>
+</div>
+
+<!-- Таблица с товарами -->
+<div class="table-container">
+    <table id="items-table">
+        <thead>
+            <tr>
+                <th>ID</th>
+                <th>Артикул</th>
+                <th>Название</th>
+                <th>Описание</th>
+                <th>Количество</th>
+                <th>Цена</th>
+                <th>Действия</th>
+            </tr>
+        </thead>
+        <tbody id="items-tbody">
+            <!-- Здесь будут строки с товарами -->
+        </tbody>
+    </table>
+</div>
+
+<script>
+let isEditing = false;
+
+// Загрузка всех товаров при загрузке страницы
+document.addEventListener('DOMContentLoaded', function() {
+    loadItems();
+    
+    // Prevent any form submission
+    document.getElementById('item-form').addEventListener('submit', function(e) {
+        e.preventDefault();
+    });
+    
+    // Обработка отправки формы
+    document.getElementById('submit-btn').addEventListener('click', function(e) {
+        e.preventDefault();
+        if (isEditing) {
+            updateItem();
+        } else {
+            createItem();
+        }
+    });
+    
+    // Кнопка отмены редактирования
+    document.getElementById('cancel-btn').addEventListener('click', function() {
+        resetForm();
+    });
+    
+    // Поиск по Enter в поле ID
+    document.getElementById('search-id').addEventListener('keypress', function(e) {
+        if (e.key === 'Enter') {
+            e.preventDefault();
+            findItemById();
+        }
+    });
+});
+
+// Загрузка товаров через API (всех)
+function loadItems() {
+    document.getElementById('search-id').value = ''; // Очистка поля поиска
+    fetch('/items')
+        .then(response => response.json())
+        .then(data => {
+            renderTable(data);
+        })
+        .catch(error => console.error('Ошибка при загрузке товаров:', error));
+}
+
+// Поиск товара по ID
+function findItemById() {
+    const itemId = document.getElementById('search-id').value;
+    if (!itemId) {
+        alert('Пожалуйста, введите ID товара');
+        return;
+    }
+
+    fetch(`/items/${itemId}`)
+        .then(response => {
+            if (!response.ok) {
+                throw new Error('Товар не найден');
+            }
+            return response.json();
+        })
+        .then(item => {
+            // Отображаем только найденный товар
+            renderTable([item]);
+        })
+        .catch(error => {
+            alert(error.message);
+            console.error('Ошибка при поиске товара:', error);
+        });
+}
+
+// Отрисовка таблицы
+function renderTable(items) {
+    const tbody = document.getElementById('items-tbody');
+    tbody.innerHTML = '';
+    
+    items.forEach(item => {
+        const row = document.createElement('tr');
+        row.innerHTML = `
+            <td>${item.id}</td>
+            <td>${item.sku}</td>
+            <td>${item.name}</td>
+            <td>${item.description || ''}</td>
+            <td>${item.quantity_in_stock}</td>
+            <td>${item.price.toFixed(2)}</td>
+            <td class="actions">
+                <button class="btn btn-edit" onclick="editItem(${item.id})">Редактировать</button>
+                <button class="btn btn-delete" onclick="deleteItem(${item.id})">Удалить</button>
+            </td>
+        `;
+        tbody.appendChild(row);
+    });
+}
+
+// Создание нового товара
+function createItem() {
+    const data = {
+        sku: document.getElementById('sku').value,
+        name: document.getElementById('name').value,
+        description: document.getElementById('description').value,
+        quantity_in_stock: parseInt(document.getElementById('quantity').value),
+        price: parseFloat(document.getElementById('price').value)
+    };
+    
+    fetch('/items', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(data)
+    })
+    .then(response => response.json())
+    .then(data => {
+        resetForm();
+        loadItems();
+    })
+    .catch(error => console.error('Ошибка при создании товара:', error));
+}
+
+// Загрузка данных товара для редактирования
+function editItem(id) {
+    fetch(`/items/${id}`)
+        .then(response => response.json())
+        .then(item => {
+            document.getElementById('item-id').value = item.id;
+            document.getElementById('sku').value = item.sku;
+            document.getElementById('name').value = item.name;
+            document.getElementById('description').value = item.description || '';
+            document.getElementById('quantity').value = item.quantity_in_stock;
+            document.getElementById('price').value = item.price;
+            
+            document.getElementById('form-title').textContent = 'Редактировать товар';
+            document.getElementById('submit-btn').textContent = 'Обновить';
+            document.getElementById('cancel-btn').style.display = 'inline-block';
+            isEditing = true;
+        })
+        .catch(error => console.error('Ошибка при загрузке товара:', error));
+}
+
+// Обновление товара
+function updateItem() {
+    const id = document.getElementById('item-id').value;
+    const data = {
+        sku: document.getElementById('sku').value,
+        name: document.getElementById('name').value,
+        description: document.getElementById('description').value,
+        quantity_in_stock: parseInt(document.getElementById('quantity').value),
+        price: parseFloat(document.getElementById('price').value)
+    };
+    
+    fetch(`/items/${id}`, {
+        method: 'PUT',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(data)
+    })
+    .then(response => response.json())
+    .then(data => {
+        resetForm();
+        loadItems();
+    })
+    .catch(error => console.error('Ошибка при обновлении товара:', error));
+}
+
+// Удаление товара
+function deleteItem(id) {
+    if (confirm('Вы уверены, что хотите удалить этот товар?')) {
+        fetch(`/items/${id}`, {
+            method: 'DELETE'
+        })
+        .then(response => response.json())
+        .then(data => {
+            loadItems();
+        })
+        .catch(error => console.error('Ошибка при удалении товара:', error));
+    }
+}
+
+// Сброс формы
+function resetForm() {
+    document.getElementById('item-form').reset();
+    document.getElementById('item-id').value = '';
+    document.getElementById('form-title').textContent = 'Добавить товар';
+    document.getElementById('submit-btn').textContent = 'Добавить';
+    document.getElementById('cancel-btn').style.display = 'none';
+    isEditing = false;
+}
+</script>
+{% endblock %}
