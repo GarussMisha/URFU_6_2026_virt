@@ -11,6 +11,13 @@ class Item(db.Model):
     created_at = db.Column(db.DateTime, default=datetime.utcnow) # Для аудита
     price = db.Column(db.Float, nullable=False)                # Цена товара
 
+    def __init__(self, sku, name, description, quantity_in_stock, price):
+        self.sku = sku
+        self.name = name
+        self.description = description
+        self.quantity_in_stock = quantity_in_stock
+        self.price = price
+
     def __repr__(self) -> str:
         return f'<Item {self.id} - {self.name} (SKU: {self.sku})>'
 
@@ -22,5 +29,6 @@ class Item(db.Model):
             'name': self.name,
             'description': self.description,
             'quantity_in_stock': self.quantity_in_stock,
-            'created_at': str(self.created_at) # Преобразуем datetime в строку для JSON ответа
+            'created_at': str(self.created_at), # Преобразуем datetime в строку для JSON ответа
+            'price': self.price
         }

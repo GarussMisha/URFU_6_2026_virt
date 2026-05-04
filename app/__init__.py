@@ -19,6 +19,7 @@ def create_app():
 
     # 3. Регистрация роутов
     from . import routes
+    app.register_blueprint(routes.bp)
     
     return app
 
